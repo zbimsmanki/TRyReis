@@ -23,16 +23,16 @@ def get(params):
     url = "https://itunes.apple.com/search?" + urllib.parse.urlencode(params)
     if url in CACHE:
         return CACHE[url]
-    for attempt in range(8):
+    for attempt in range(40):
         try:
             with urllib.request.urlopen(url, timeout=30) as r:
                 res = json.load(r)["results"]
             CACHE[url] = res
             CACHE_FILE.write_text(json.dumps(CACHE))
-            time.sleep(3)
+            time.sleep(5)
             return res
         except Exception as e:
-            print("  retry", attempt, e, file=sys.stderr, flush=True); time.sleep(6 * (attempt + 1))
+            print("  retry", attempt, e, file=sys.stderr, flush=True); time.sleep(min(180, 8 * 2 ** attempt))
     return []
 
 def artist_ok(artist, name):
