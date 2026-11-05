@@ -109,6 +109,11 @@ details.groups[open] summary::after { content: "－"; }
 .bulb.reveal .icon { opacity: 0; }
 .playing .bulb { animation: pulse .52s ease-in-out infinite alternate; }
 @keyframes pulse { from { box-shadow: 0 0 22px var(--glow-soft), inset 0 -6px 16px #0006; transform: scale(1); } to { box-shadow: 0 0 70px var(--glow), inset 0 -6px 16px #0006; transform: scale(1.04); } }
+.vidbox { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); box-shadow: 0 0 40px var(--glow-soft); }
+.vidbox video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vidbox .badge { position: absolute; top: 10px; left: 10px; background: #000a; color: var(--ink); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.vidbox .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: #0008; }
+.vidbox .bar i { display: block; height: 100%; width: 100%; background: var(--glow); transform-origin: left; }
 .status { min-height: 1.5em; color: var(--ink-dim); font-size: 14px; text-align: center; }
 .replay { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 600; }
 
@@ -165,9 +170,19 @@ details.groups[open] summary::after { content: "－"; }
 
   <!-- ===== SETUP ===== -->
   <section id="setup" class="screen">
-    <p class="lede">Ein kurzer Ausschnitt läuft, du hast vier Antworten, eine davon stimmt. Je schneller du tippst, desto mehr Punkte gibt es. Richtige Antworten in Folge bringen einen Combo-Bonus.</p>
+    <p class="lede">Hör einen kurzen Ausschnitt oder schau dir die Choreo an. Du hast vier Antworten, eine davon stimmt. Je schneller du tippst, desto mehr Punkte gibt es. Richtige Antworten in Folge bringen einen Combo-Bonus.</p>
 
     <div class="panel">
+      <div class="field">
+        <span class="label">Spielmodus</span>
+        <div class="seg" id="opt-play">
+          <button type="button" data-v="audio" aria-pressed="true">🎧 Nur Audio</button>
+          <button type="button" data-v="dance" aria-pressed="false">💃 Nur Choreo</button>
+          <button type="button" data-v="mv" aria-pressed="false">🎬 MV mit Ton</button>
+          <button type="button" data-v="mix" aria-pressed="false">🔀 Gemischt</button>
+        </div>
+        <p class="hint" id="play-hint"></p>
+      </div>
       <div class="field">
         <span class="label">Runden</span>
         <div class="seg" id="opt-rounds">
@@ -225,6 +240,11 @@ details.groups[open] summary::after { content: "－"; }
         </svg>
         <div class="bulb" id="bulb"><img id="cover" alt=""><span class="icon">♪</span></div>
       </div>
+      <div class="vidbox" id="vidbox" hidden>
+        <video id="video" playsinline muted preload="auto"></video>
+        <span class="badge" id="vid-badge">Choreo · ohne Ton</span>
+        <div class="bar"><i id="bar"></i></div>
+      </div>
       <div class="status" id="status" aria-live="polite">Lädt …</div>
       <button type="button" class="replay" id="replay">↻ Nochmal hören</button>
     </div>
@@ -266,7 +286,7 @@ details.groups[open] summary::after { content: "－"; }
   "use strict";
   const SONGS = (window.SONGS || []).filter(s => s.p);
   const $ = id => document.getElementById(id);
-  const audio = $("audio");
+  const audio = $("audio"), video = $("video");
   const ANSWER_TIME = 15;             // seconds to answer after the clip starts
   const RING = 490;                   // circumference of the timer ring
 
@@ -276,7 +296,7 @@ details.groups[open] summary::after { content: "－"; }
   };
 
   // ---------- settings ----------
-  const settings = Object.assign({ rounds: "20", clip: "10", mode: "mix" }, store.get("settings", {}));
+  const settings = Object.assign({ play: "audio", rounds: "20", clip: "10", mode: "mix" }, store.get("settings", {}));
   const artists = [...new Set(SONGS.map(s => s.a))].sort((a, b) => a.localeCompare(b, "de", { sensitivity: "base" }));
   const countBy = SONGS.reduce((m, s) => (m[s.a] = (m[s.a] || 0) + 1, m), {});
   let selected = new Set(store.get("artists", null) || artists);
@@ -288,18 +308,29 @@ details.groups[open] summary::after { content: "－"; }
     mix: "Eine falsche Antwort ist vom selben Artist, der Rest zufällig.",
     hard: "Alle Antworten sind vom selben Artist, wenn möglich."
   };
+  const PLAY_HINT = {
+    audio: "Du hörst einen Ausschnitt des Songs.",
+    dance: "Du siehst einen Ausschnitt aus dem Musikvideo, ohne Ton. Erkennst du den Song an der Choreo?",
+    mv: "Du siehst und hörst einen Ausschnitt aus dem Musikvideo.",
+    mix: "Jede Runde zufällig: Audio, Choreo oder MV."
+  };
+  const needsVideo = () => settings.play === "dance" || settings.play === "mv";
+  const pool = () => SONGS.filter(s => selected.has(s.a) && (!needsVideo() || s.v));
 
   function bindSeg(id, key) {
     const el = $(id);
     const sync = () => el.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === settings[key])));
     el.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
-      settings[key] = b.dataset.v; store.set("settings", settings); sync(); renderHint();
+      settings[key] = b.dataset.v; store.set("settings", settings); sync(); renderHint(); saveGroups();
     });
     sync();
   }
-  function renderHint() { $("mode-hint").textContent = MODE_HINT[settings.mode]; }
-  bindSeg("opt-rounds", "rounds"); bindSeg("opt-clip", "clip"); bindSeg("opt-mode", "mode"); renderHint();
+  function renderHint() {
+    $("mode-hint").textContent = MODE_HINT[settings.mode];
+    const vids = SONGS.filter(s => s.v).length;
+    $("play-hint").textContent = PLAY_HINT[settings.play] + (settings.play !== "audio" ? ` (${vids} Songs mit Musikvideo)` : "");
+  }
 
   function renderGroups() {
     const q = $("group-search").value.trim().toLowerCase();
@@ -316,11 +347,12 @@ details.groups[open] summary::after { content: "－"; }
   }
   function saveGroups() {
     store.set("artists", selected.size === artists.length ? null : [...selected]);
-    const n = SONGS.filter(s => selected.has(s.a)).length;
+    const n = pool().length;
     $("group-count").textContent = `· ${selected.size} ausgewählt, ${n} Songs`;
-    $("start").disabled = n < 4;
-    $("start").textContent = n < 4 ? "Mindestens 4 Songs auswählen" : "Los geht's ▶";
+    $("start").disabled = n < 1 || SONGS.length < 4;
+    $("start").textContent = n < 1 ? "Keine passenden Songs ausgewählt" : "Los geht's ▶";
   }
+  bindSeg("opt-play", "play"); bindSeg("opt-rounds", "rounds"); bindSeg("opt-clip", "clip"); bindSeg("opt-mode", "mode"); renderHint();
   $("group-search").addEventListener("input", renderGroups);
   $("g-all").addEventListener("click", () => { selected = new Set(artists); saveGroups(); renderGroups(); });
   $("g-none").addEventListener("click", () => { selected.clear(); saveGroups(); renderGroups(); });
@@ -331,29 +363,31 @@ details.groups[open] summary::after { content: "－"; }
 
   // ---------- helpers ----------
   const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
-  const pick = (arr, n, avoid) => shuffle(arr.filter(x => !avoid.has(x))).slice(0, n);
-  const key = s => (s.a + "|" + s.t).toLowerCase();
 
   function buildOptions(song) {
     const used = new Set([song]);
     const taken = new Set([song.t.toLowerCase()]);
     const ok = s => !used.has(s) && !taken.has(s.t.toLowerCase());
-    const sameArtist = SONGS.filter(s => s.a === song.a && ok(s));
-    const others = SONGS.filter(s => s.a !== song.a && ok(s));
-    let wanted = settings.mode === "hard" ? 3 : settings.mode === "mix" ? 1 : 0;
+    const take = s => { opts.push(s); used.add(s); taken.add(s.t.toLowerCase()); };
+    const wanted = settings.mode === "hard" ? 3 : settings.mode === "mix" ? 1 : 0;
     const opts = [];
-    for (const s of shuffle(sameArtist.slice())) { if (opts.length >= wanted) break; if (ok(s)) { opts.push(s); used.add(s); taken.add(s.t.toLowerCase()); } }
-    for (const s of shuffle(others.slice())) { if (opts.length >= 3) break; if (ok(s)) { opts.push(s); used.add(s); taken.add(s.t.toLowerCase()); } }
+    for (const s of shuffle(SONGS.filter(s => s.a === song.a))) { if (opts.length >= wanted) break; if (ok(s)) take(s); }
+    for (const s of shuffle(SONGS.filter(s => s.a !== song.a))) { if (opts.length >= 3) break; if (ok(s)) take(s); }
     return shuffle([song, ...opts]);
   }
 
   // ---------- game state ----------
   let g = null, timer = null, clipTimer = null;
 
+  function stopMedia() {
+    clearTimeout(clipTimer);
+    audio.pause(); video.pause();
+    $("stage").classList.remove("playing");
+  }
+
   function newGame() {
-    const pool = shuffle(SONGS.filter(s => selected.has(s.a)));
     const rounds = +settings.rounds;
-    g = { deck: pool, idx: -1, total: rounds || Infinity, lives: rounds ? null : 3, score: 0, streak: 0, best: 0, right: 0, times: [], history: [], answered: false, start: 0, cur: null, offset: 0 };
+    g = { deck: shuffle(pool()), idx: -1, total: rounds || Infinity, lives: rounds ? null : 3, score: 0, streak: 0, best: 0, right: 0, times: [], history: [], answered: false, start: 0, cur: null, offset: 0, loadFails: 0, type: "audio", media: audio };
     show("game");
     nextRound();
   }
@@ -367,23 +401,36 @@ details.groups[open] summary::after { content: "－"; }
     $("h-score").textContent = g.score;
   }
 
+  function roundType(song) {
+    if (settings.play !== "mix") return settings.play;
+    return song.v ? ["audio", "dance", "mv"][Math.random() * 3 | 0] : "audio";
+  }
+
   function nextRound() {
-    clearInterval(timer); clearTimeout(clipTimer);
+    clearInterval(timer); stopMedia();
     g.idx++;
     if (g.idx >= g.total || g.idx >= g.deck.length || (g.lives != null && g.lives <= 0)) return finish();
     const song = g.deck[g.idx];
-    g.cur = song; g.answered = false; g.loadFails = g.loadFails || 0;
+    g.cur = song; g.answered = false;
+    g.type = roundType(song);
+    const isVid = g.type !== "audio";
+    g.media = isVid ? video : audio;
     hud();
     $("after").hidden = true;
+    document.querySelector(".stick").hidden = isVid;
+    $("vidbox").hidden = !isVid;
+    $("vid-badge").textContent = g.type === "dance" ? "💃 Choreo · ohne Ton" : "🎬 Musikvideo";
+    video.muted = g.type === "dance";
     $("bulb").classList.remove("reveal");
     $("cover").removeAttribute("src");
     $("ring").style.strokeDashoffset = 0; $("ring").style.stroke = "";
+    $("bar").style.transform = "scaleX(1)"; $("bar").style.background = "";
     $("status").textContent = "Lädt …";
     $("replay").hidden = false;
+    $("replay").textContent = g.type === "dance" ? "↻ Nochmal ansehen" : "↻ Nochmal abspielen";
 
-    const opts = buildOptions(song);
     const box = $("answers"); box.innerHTML = "";
-    opts.forEach((s, i) => {
+    buildOptions(song).forEach((s, i) => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "ans"; b.disabled = true; b._song = s;
       b.innerHTML = `<span class="key">${i + 1}</span><span class="t"></span><span class="a"></span>`;
@@ -392,46 +439,51 @@ details.groups[open] summary::after { content: "－"; }
       box.append(b);
     });
 
-    audio.src = song.p;
-    audio.load();
+    const m = g.media;
     const onReady = () => {
-      audio.removeEventListener("error", onErr);
+      m.removeEventListener("error", onErr);
       const clip = +settings.clip;
-      const dur = isFinite(audio.duration) ? audio.duration : 30;
-      g.offset = clip >= 10 ? Math.random() * Math.max(0, dur - clip - 4) : 3 + Math.random() * Math.max(0, dur - clip - 6);
+      const dur = isFinite(m.duration) && m.duration > 0 ? m.duration : 30;
+      // skip the first seconds (title cards, silence) and leave room for the clip
+      const lo = Math.min(isVid ? 4 : 2, Math.max(0, dur - clip - 1));
+      g.offset = lo + Math.random() * Math.max(0, dur - clip - lo - 1);
       document.querySelectorAll(".ans").forEach(b => b.disabled = false);
       g.start = performance.now();
       playClip();
       startTimer();
     };
     const onErr = () => {
-      audio.removeEventListener("canplaythrough", onReady);
+      m.removeEventListener("canplaythrough", onReady);
       // preview no longer available: drop it from this game and pull the next song in
       g.deck.splice(g.idx, 1); g.idx--;
       if (++g.loadFails > 8) { $("status").textContent = "Die Ausschnitte laden gerade nicht. Prüfe deine Internetverbindung."; return; }
       nextRound();
     };
-    audio.addEventListener("canplaythrough", onReady, { once: true });
-    audio.addEventListener("error", onErr, { once: true });
+    m.addEventListener("canplaythrough", onReady, { once: true });
+    m.addEventListener("error", onErr, { once: true });
+    m.src = isVid ? song.v : song.p;
+    m.load();
   }
 
   function playClip() {
     clearTimeout(clipTimer);
-    audio.currentTime = g.offset;
-    const p = audio.play();
-    if (p && p.catch) p.catch(() => { $("status").textContent = "Tippe auf „Nochmal hören“, um den Ausschnitt abzuspielen."; });
+    const m = g.media;
+    m.currentTime = g.offset;
+    const p = m.play();
+    if (p && p.catch) p.catch(() => { $("status").textContent = "Tippe auf „Nochmal abspielen“, um den Ausschnitt zu starten."; });
     $("stage").classList.add("playing");
-    $("status").textContent = "Welcher Song ist das?";
-    clipTimer = setTimeout(() => { if (!g.answered) { audio.pause(); $("stage").classList.remove("playing"); } }, +settings.clip * 1000);
+    $("status").textContent = g.type === "dance" ? "Welcher Song gehört zu dieser Choreo?" : "Welcher Song ist das?";
+    clipTimer = setTimeout(() => { if (!g.answered) { m.pause(); $("stage").classList.remove("playing"); } }, +settings.clip * 1000);
   }
 
   function startTimer() {
     clearInterval(timer);
     timer = setInterval(() => {
-      const el = (performance.now() - g.start) / 1000;
-      const left = Math.max(0, ANSWER_TIME - el);
-      $("ring").style.strokeDashoffset = RING * (1 - left / ANSWER_TIME);
-      if (left < 4) $("ring").style.stroke = "var(--bad)";
+      const left = Math.max(0, ANSWER_TIME - (performance.now() - g.start) / 1000);
+      const frac = left / ANSWER_TIME;
+      $("ring").style.strokeDashoffset = RING * (1 - frac);
+      $("bar").style.transform = `scaleX(${frac})`;
+      if (left < 4) { $("ring").style.stroke = "var(--bad)"; $("bar").style.background = "var(--bad)"; }
       if (left <= 0) answer(null);
     }, 50);
   }
@@ -459,14 +511,16 @@ details.groups[open] summary::after { content: "－"; }
       else if (b === btn) b.classList.add("wrong");
       else b.classList.add("dim");
     });
-    g.history.push({ song: g.cur, correct, picked: btn && btn._song });
+    g.history.push({ song: g.cur, correct, picked: btn && btn._song, type: g.type });
 
-    // reveal: cover art and keep the song playing from the start of the preview
+    // reveal: cover art, sound on, keep the preview playing
     if (g.cur.c) $("cover").src = g.cur.c;
     $("bulb").classList.add("reveal");
     $("replay").hidden = true;
-    audio.currentTime = Math.min(g.offset, 10);
-    audio.play().catch(() => {});
+    const m = g.media;
+    if (m === video) { video.muted = false; $("vid-badge").textContent = "🔊 " + g.cur.t; }
+    m.currentTime = Math.min(g.offset, 10);
+    m.play().catch(() => {});
     $("stage").classList.add("playing");
     $("status").textContent = `${g.cur.t} · ${g.cur.a}${g.cur.y ? " · " + g.cur.y : ""}`;
 
@@ -481,8 +535,7 @@ details.groups[open] summary::after { content: "－"; }
   }
 
   function finish() {
-    clearInterval(timer); clearTimeout(clipTimer);
-    audio.pause(); $("stage").classList.remove("playing");
+    clearInterval(timer); stopMedia();
     const prev = store.get("best", 0);
     const isBest = g.score > prev;
     if (isBest) store.set("best", g.score);
@@ -492,13 +545,14 @@ details.groups[open] summary::after { content: "－"; }
     $("r-right").textContent = `${g.right}/${g.history.length}`;
     $("r-streak").textContent = g.best;
     $("r-time").textContent = g.times.length ? (g.times.reduce((a, b) => a + b, 0) / g.times.length).toFixed(1) + " s" : "–";
+    const icon = { audio: "🎧", dance: "💃", mv: "🎬" };
     const ul = $("history"); ul.innerHTML = "";
     g.history.forEach(h => {
       const li = document.createElement("li");
       const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; if (h.song.c) img.src = h.song.c.replace("300x300", "100x100");
       const meta = document.createElement("div"); meta.className = "meta";
       const b = document.createElement("b"); b.textContent = h.song.t;
-      const sp = document.createElement("span"); sp.textContent = h.song.a + (!h.correct && h.picked ? ` · du: ${h.picked.t}` : "");
+      const sp = document.createElement("span"); sp.textContent = `${icon[h.type]} ${h.song.a}` + (!h.correct && h.picked ? ` · du: ${h.picked.t}` : "");
       meta.append(b, sp);
       const r = document.createElement("span"); r.className = "res " + (h.correct ? "ok" : "no"); r.textContent = h.correct ? "✓" : "✗";
       li.append(img, meta, r); ul.append(li);
@@ -510,7 +564,7 @@ details.groups[open] summary::after { content: "－"; }
   $("start").addEventListener("click", newGame);
   $("again").addEventListener("click", newGame);
   $("back").addEventListener("click", () => show("setup"));
-  $("next").addEventListener("click", () => { audio.pause(); $("stage").classList.remove("playing"); nextRound(); });
+  $("next").addEventListener("click", nextRound);
   $("replay").addEventListener("click", () => { if (g && !g.answered) playClip(); });
   $("quit").addEventListener("click", () => { if (g) finish(); });
   document.addEventListener("keydown", e => {

@@ -1,6 +1,6 @@
 # Bias Check · K-Pop Guess the Song
 
-Ein kurzer Ausschnitt eines K-Pop-Songs läuft. Du hast vier Antworten, eine davon stimmt.
+Hör einen kurzen Ausschnitt eines K-Pop-Songs oder schau dir die Choreo an. Du hast vier Antworten, eine davon stimmt.
 
 ## Spielen
 
@@ -9,7 +9,12 @@ Ein kurzer Ausschnitt eines K-Pop-Songs läuft. Du hast vier Antworten, eine dav
 
 ## Features
 
-- Über 1000 K-Pop-Songs von über 100 Gruppen und Solo-Artists (30-Sekunden-Vorschauen von Apple Music/iTunes)
+- Über 1000 K-Pop-Songs von über 100 Gruppen und Solo-Artists (30-Sekunden-Vorschauen von Apple Music/iTunes, viele davon auch mit Musikvideo)
+- Spielmodi:
+  - 🎧 **Nur Audio**: Ausschnitt aus dem Song
+  - 💃 **Nur Choreo**: Ausschnitt aus dem Musikvideo ohne Ton
+  - 🎬 **MV mit Ton**: Ausschnitt aus dem Musikvideo mit Ton
+  - 🔀 **Gemischt**: jede Runde ein zufälliger Modus
 - 10, 20 oder 50 Runden oder **Endlos** mit 3 Leben
 - Ausschnittlänge: 10, 5 oder 2 Sekunden
 - Schwierigkeit: **Leicht** (falsche Antworten von anderen Artists), **Normal** (eine vom selben Artist), **Schwer** (alle vom selben Artist)
