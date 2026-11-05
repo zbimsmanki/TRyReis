@@ -9,7 +9,7 @@ Hör einen kurzen Ausschnitt eines K-Pop-Songs oder schau dir die Choreo an. Du 
 
 ## Features
 
-- Über 1000 K-Pop-Songs von über 100 Gruppen und Solo-Artists (30-Sekunden-Vorschauen von Apple Music/iTunes, viele davon auch mit Musikvideo)
+- **1451 K-Pop-Songs** von 153 Gruppen und Solo-Artists (30-Sekunden-Vorschauen von Apple Music/iTunes), davon **805 mit Musikvideo** für die Choreo- und MV-Modi
 - Spielmodi:
   - 🎧 **Nur Audio**: Ausschnitt aus dem Song
   - 💃 **Nur Choreo**: Ausschnitt aus dem Musikvideo ohne Ton
