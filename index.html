@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bias Check</title>
+<meta name="description" content="K-Pop Guess the Song: Hör kurz rein und wähle aus vier Antworten den richtigen Song.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one centered stage column; the lightstick is the hero, answers sit below like a fanchant card. */
+:root {
+  color-scheme: dark;
+  --stage: #0d0a14;        /* concert-hall black, slightly violet */
+  --stage-2: #17121f;      /* raised surface */
+  --line: #2c2438;
+  --ink: #f3eefb;
+  --ink-dim: #a89cb8;
+  --glow: #ff3d9a;         /* lightstick magenta */
+  --glow-soft: #ff3d9a33;
+  --good: #3ee08f;
+  --bad: #ff5d5d;
+  --f-display: "Black Han Sans", "Arial Black", "Helvetica Neue", sans-serif;
+  --f-body: "Gothic A1", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r: 14px;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(120% 70% at 50% -10%, #2a1236 0%, var(--stage) 60%) fixed, var(--stage);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: max(20px, env(safe-area-inset-top, 0px)) max(32px, env(safe-area-inset-bottom, 0px));
+}
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
+
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.screen { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+
+header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.logo { font: 400 clamp(34px, 9vw, 52px)/1 var(--f-display); letter-spacing: .01em; margin: 0; }
+.logo span { color: var(--glow); text-shadow: 0 0 18px var(--glow-soft), 0 0 2px var(--glow); }
+.hangul { font: 400 14px var(--f-display); color: var(--ink-dim); letter-spacing: .2em; }
+.lede { color: var(--ink-dim); margin: 0; max-width: 52ch; }
+
+.label { font: 600 11px var(--f-body); text-transform: uppercase; letter-spacing: .14em; color: var(--ink-dim); }
+
+/* ---------- setup ---------- */
+.panel { background: var(--stage-2); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button {
+  background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: 14px;
+  transition: border-color .15s, background .15s;
+}
+.seg button:hover { border-color: var(--ink-dim); }
+.seg button[aria-pressed="true"] { background: var(--glow); border-color: var(--glow); color: #1a0010; }
+.hint { font-size: 13px; color: var(--ink-dim); margin: 0; }
+
+details.groups summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 8px; }
+details.groups summary::after { content: "＋"; color: var(--ink-dim); }
+details.groups[open] summary::after { content: "－"; }
+.group-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.group-tools input { flex: 1 1 160px; min-width: 0; background: var(--stage); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; color: var(--ink); font: inherit; font-size: 14px; }
+.mini { background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.group-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; max-height: 260px; overflow-y: auto; padding-right: 4px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 10px; font-size: 13px; color: var(--ink-dim); }
+.chip[aria-pressed="true"] { color: var(--ink); border-color: var(--glow); background: var(--glow-soft); }
+.chip small { font-family: var(--f-mono); font-size: 11px; opacity: .7; margin-left: 4px; }
+
+.start {
+  border: 0; border-radius: 999px; padding: 16px 28px; background: var(--glow); color: #1a0010;
+  font: 400 22px var(--f-display); letter-spacing: .03em; box-shadow: 0 0 30px var(--glow-soft);
+  transition: transform .1s;
+}
+.start:active { transform: scale(.98); }
+.start:disabled { opacity: .4; cursor: not-allowed; }
+.foot { font-size: 12px; color: var(--ink-dim); text-align: center; }
+.foot b { font-family: var(--f-mono); color: var(--ink); font-weight: 500; }
+
+/* ---------- game ---------- */
+.hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.hud div { display: flex; flex-direction: column; gap: 2px; }
+.hud div:nth-child(2) { align-items: center; }
+.hud div:nth-child(3) { align-items: flex-end; }
+.hud strong { font: 500 22px var(--f-mono); font-variant-numeric: tabular-nums; }
+.streak strong { color: var(--glow); }
+
+.stage { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 8px 0; }
+.stick { position: relative; width: 168px; height: 168px; display: grid; place-items: center; }
+.stick svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.stick .track { stroke: var(--line); }
+.stick .ring { stroke: var(--glow); transition: stroke .2s; }
+.bulb {
+  width: 112px; height: 112px; border-radius: 50%; border: 0; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #ffd1e8 0%, var(--glow) 45%, #7a0f48 100%);
+  box-shadow: 0 0 40px var(--glow-soft), inset 0 -6px 16px #0006; position: relative;
+}
+.bulb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s; }
+.bulb.reveal img { opacity: 1; }
+.bulb .icon { font-size: 34px; color: #1a0010; position: relative; }
+.bulb.reveal .icon { opacity: 0; }
+.playing .bulb { animation: pulse .52s ease-in-out infinite alternate; }
+@keyframes pulse { from { box-shadow: 0 0 22px var(--glow-soft), inset 0 -6px 16px #0006; transform: scale(1); } to { box-shadow: 0 0 70px var(--glow), inset 0 -6px 16px #0006; transform: scale(1.04); } }
+.status { min-height: 1.5em; color: var(--ink-dim); font-size: 14px; text-align: center; }
+.replay { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 600; }
+
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .answers { grid-template-columns: 1fr; } }
+.ans {
+  text-align: left; background: var(--stage-2); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px;
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; min-height: 74px;
+  transition: border-color .15s, background .15s, transform .1s;
+}
+.ans:hover:not(:disabled) { border-color: var(--glow); }
+.ans:active:not(:disabled) { transform: scale(.99); }
+.ans .key { grid-row: span 2; font: 500 12px var(--f-mono); width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--line); display: grid; place-items: center; color: var(--ink-dim); }
+.ans .t { font-weight: 800; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; }
+.ans .a { font-size: 13px; color: var(--ink-dim); min-width: 0; overflow-wrap: anywhere; }
+.ans:disabled { cursor: default; }
+.ans.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--stage-2)); }
+.ans.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, var(--stage-2)); }
+.ans.dim { opacity: .45; }
+
+.after { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.verdict { font: 400 24px var(--f-display); }
+.verdict.ok { color: var(--good); }
+.verdict.no { color: var(--bad); }
+.next { border: 0; border-radius: 999px; padding: 12px 22px; background: var(--ink); color: var(--stage); font-weight: 800; }
+.quit { background: none; border: 0; color: var(--ink-dim); font-size: 13px; text-decoration: underline; justify-self: center; }
+
+/* ---------- results ---------- */
+.big { font: 400 clamp(56px, 16vw, 88px)/1 var(--f-display); color: var(--glow); text-shadow: 0 0 24px var(--glow-soft); margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats div { background: var(--stage-2); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.stats strong { font: 500 20px var(--f-mono); font-variant-numeric: tabular-nums; }
+.newbest { color: var(--good); font-weight: 800; margin: 0; }
+.history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.history li { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 8px; border-radius: 12px; background: var(--stage-2); border: 1px solid var(--line); }
+.history img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--line); }
+.history .meta { min-width: 0; display: flex; flex-direction: column; }
+.history .meta b { overflow-wrap: anywhere; }
+.history .meta span { font-size: 13px; color: var(--ink-dim); overflow-wrap: anywhere; }
+.history .res { font: 500 14px var(--f-mono); }
+.history .res.ok { color: var(--good); }
+.history .res.no { color: var(--bad); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) { .playing .bulb { animation: none; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 class="logo">Bias <span>Check</span></h1>
+    <div class="hangul">노래 맞히기</div>
+  </header>
+
+  <!-- ===== SETUP ===== -->
+  <section id="setup" class="screen">
+    <p class="lede">Ein kurzer Ausschnitt läuft, du hast vier Antworten, eine davon stimmt. Je schneller du tippst, desto mehr Punkte gibt es. Richtige Antworten in Folge bringen einen Combo-Bonus.</p>
+
+    <div class="panel">
+      <div class="field">
+        <span class="label">Runden</span>
+        <div class="seg" id="opt-rounds">
+          <button type="button" data-v="10" aria-pressed="false">10</button>
+          <button type="button" data-v="20" aria-pressed="true">20</button>
+          <button type="button" data-v="50" aria-pressed="false">50</button>
+          <button type="button" data-v="0" aria-pressed="false">Endlos (3 Leben)</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">Ausschnitt</span>
+        <div class="seg" id="opt-clip">
+          <button type="button" data-v="10" aria-pressed="true">10 Sek.</button>
+          <button type="button" data-v="5" aria-pressed="false">5 Sek.</button>
+          <button type="button" data-v="2" aria-pressed="false">2 Sek. (Profi)</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">Antworten</span>
+        <div class="seg" id="opt-mode">
+          <button type="button" data-v="easy" aria-pressed="false">Leicht</button>
+          <button type="button" data-v="mix" aria-pressed="true">Normal</button>
+          <button type="button" data-v="hard" aria-pressed="false">Schwer</button>
+        </div>
+        <p class="hint" id="mode-hint"></p>
+      </div>
+      <details class="groups" id="groups">
+        <summary><span>Gruppen &amp; Solo-Artists <span class="hint" id="group-count"></span></span></summary>
+        <div class="group-tools">
+          <input id="group-search" type="search" placeholder="Suchen, z. B. TWICE" autocomplete="off">
+          <button type="button" class="mini" id="g-all">Alle</button>
+          <button type="button" class="mini" id="g-none">Keine</button>
+        </div>
+        <div class="group-list" id="group-list"></div>
+      </details>
+    </div>
+
+    <button type="button" class="start" id="start">Los geht's ▶</button>
+    <p class="foot"><b id="song-total">0</b> Songs von <b id="artist-total">0</b> Artists · Rekord: <b id="best">0</b></p>
+  </section>
+
+  <!-- ===== GAME ===== -->
+  <section id="game" class="screen" hidden>
+    <div class="hud">
+      <div><span class="label">Runde</span><strong id="h-round">1/20</strong></div>
+      <div class="streak"><span class="label" id="h-mid-label">Combo</span><strong id="h-streak">0</strong></div>
+      <div><span class="label">Punkte</span><strong id="h-score">0</strong></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="stick">
+        <svg viewBox="0 0 168 168" aria-hidden="true">
+          <circle class="track" cx="84" cy="84" r="78" fill="none" stroke-width="6"></circle>
+          <circle class="ring" id="ring" cx="84" cy="84" r="78" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="490" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="bulb" id="bulb"><img id="cover" alt=""><span class="icon">♪</span></div>
+      </div>
+      <div class="status" id="status" aria-live="polite">Lädt …</div>
+      <button type="button" class="replay" id="replay">↻ Nochmal hören</button>
+    </div>
+
+    <div class="answers" id="answers"></div>
+
+    <div class="after" id="after" hidden>
+      <span class="verdict" id="verdict"></span>
+      <button type="button" class="next" id="next">Weiter →</button>
+    </div>
+    <button type="button" class="quit" id="quit">Spiel beenden</button>
+  </section>
+
+  <!-- ===== RESULTS ===== -->
+  <section id="results" class="screen" hidden>
+    <div>
+      <span class="label">Deine Punkte</span>
+      <p class="big" id="r-score">0</p>
+      <p class="newbest" id="r-best" hidden>Neuer Rekord! ✦</p>
+    </div>
+    <div class="stats">
+      <div><span class="label">Richtig</span><strong id="r-right">0/0</strong></div>
+      <div><span class="label">Beste Combo</span><strong id="r-streak">0</strong></div>
+      <div><span class="label">Ø Zeit</span><strong id="r-time">0 s</strong></div>
+    </div>
+    <div class="row">
+      <button type="button" class="start" id="again">Nochmal ▶</button>
+      <button type="button" class="mini" id="back">Einstellungen</button>
+    </div>
+    <span class="label">Gespielte Songs</span>
+    <ul class="history" id="history"></ul>
+  </section>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+<script src="data/songs.js"></script>
+<script>
+(() => {
+  "use strict";
+  const SONGS = (window.SONGS || []).filter(s => s.p);
+  const $ = id => document.getElementById(id);
+  const audio = $("audio");
+  const ANSWER_TIME = 15;             // seconds to answer after the clip starts
+  const RING = 490;                   // circumference of the timer ring
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("biascheck:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("biascheck:" + k, JSON.stringify(v)); } catch {} }
+  };
+
+  // ---------- settings ----------
+  const settings = Object.assign({ rounds: "20", clip: "10", mode: "mix" }, store.get("settings", {}));
+  const artists = [...new Set(SONGS.map(s => s.a))].sort((a, b) => a.localeCompare(b, "de", { sensitivity: "base" }));
+  const countBy = SONGS.reduce((m, s) => (m[s.a] = (m[s.a] || 0) + 1, m), {});
+  let selected = new Set(store.get("artists", null) || artists);
+  for (const a of [...selected]) if (!countBy[a]) selected.delete(a);
+  if (!selected.size) selected = new Set(artists);
+
+  const MODE_HINT = {
+    easy: "Die falschen Antworten sind zufällige Songs anderer Artists.",
+    mix: "Eine falsche Antwort ist vom selben Artist, der Rest zufällig.",
+    hard: "Alle Antworten sind vom selben Artist, wenn möglich."
+  };
+
+  function bindSeg(id, key) {
+    const el = $(id);
+    const sync = () => el.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === settings[key])));
+    el.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      settings[key] = b.dataset.v; store.set("settings", settings); sync(); renderHint();
+    });
+    sync();
+  }
+  function renderHint() { $("mode-hint").textContent = MODE_HINT[settings.mode]; }
+  bindSeg("opt-rounds", "rounds"); bindSeg("opt-clip", "clip"); bindSeg("opt-mode", "mode"); renderHint();
+
+  function renderGroups() {
+    const q = $("group-search").value.trim().toLowerCase();
+    $("group-list").innerHTML = "";
+    for (const a of artists) {
+      if (q && !a.toLowerCase().includes(q)) continue;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", String(selected.has(a)));
+      b.textContent = a;
+      const n = document.createElement("small"); n.textContent = countBy[a]; b.append(n);
+      b.addEventListener("click", () => { selected.has(a) ? selected.delete(a) : selected.add(a); saveGroups(); b.setAttribute("aria-pressed", String(selected.has(a))); });
+      $("group-list").append(b);
+    }
+  }
+  function saveGroups() {
+    store.set("artists", selected.size === artists.length ? null : [...selected]);
+    const n = SONGS.filter(s => selected.has(s.a)).length;
+    $("group-count").textContent = `· ${selected.size} ausgewählt, ${n} Songs`;
+    $("start").disabled = n < 4;
+    $("start").textContent = n < 4 ? "Mindestens 4 Songs auswählen" : "Los geht's ▶";
+  }
+  $("group-search").addEventListener("input", renderGroups);
+  $("g-all").addEventListener("click", () => { selected = new Set(artists); saveGroups(); renderGroups(); });
+  $("g-none").addEventListener("click", () => { selected.clear(); saveGroups(); renderGroups(); });
+  renderGroups(); saveGroups();
+  $("song-total").textContent = SONGS.length;
+  $("artist-total").textContent = artists.length;
+  $("best").textContent = store.get("best", 0);
+
+  // ---------- helpers ----------
+  const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+  const pick = (arr, n, avoid) => shuffle(arr.filter(x => !avoid.has(x))).slice(0, n);
+  const key = s => (s.a + "|" + s.t).toLowerCase();
+
+  function buildOptions(song) {
+    const used = new Set([song]);
+    const taken = new Set([song.t.toLowerCase()]);
+    const ok = s => !used.has(s) && !taken.has(s.t.toLowerCase());
+    const sameArtist = SONGS.filter(s => s.a === song.a && ok(s));
+    const others = SONGS.filter(s => s.a !== song.a && ok(s));
+    let wanted = settings.mode === "hard" ? 3 : settings.mode === "mix" ? 1 : 0;
+    const opts = [];
+    for (const s of shuffle(sameArtist.slice())) { if (opts.length >= wanted) break; if (ok(s)) { opts.push(s); used.add(s); taken.add(s.t.toLowerCase()); } }
+    for (const s of shuffle(others.slice())) { if (opts.length >= 3) break; if (ok(s)) { opts.push(s); used.add(s); taken.add(s.t.toLowerCase()); } }
+    return shuffle([song, ...opts]);
+  }
+
+  // ---------- game state ----------
+  let g = null, timer = null, clipTimer = null;
+
+  function newGame() {
+    const pool = shuffle(SONGS.filter(s => selected.has(s.a)));
+    const rounds = +settings.rounds;
+    g = { deck: pool, idx: -1, total: rounds || Infinity, lives: rounds ? null : 3, score: 0, streak: 0, best: 0, right: 0, times: [], history: [], answered: false, start: 0, cur: null, offset: 0 };
+    show("game");
+    nextRound();
+  }
+
+  function show(id) { for (const s of ["setup", "game", "results"]) $(s).hidden = s !== id; window.scrollTo(0, 0); }
+
+  function hud() {
+    $("h-round").textContent = g.total === Infinity ? `${g.idx + 1}` : `${g.idx + 1}/${g.total}`;
+    if (g.lives != null) { $("h-mid-label").textContent = "Leben · Combo"; $("h-streak").textContent = "♥".repeat(g.lives) + " · " + g.streak; }
+    else { $("h-mid-label").textContent = "Combo"; $("h-streak").textContent = g.streak; }
+    $("h-score").textContent = g.score;
+  }
+
+  function nextRound() {
+    clearInterval(timer); clearTimeout(clipTimer);
+    g.idx++;
+    if (g.idx >= g.total || g.idx >= g.deck.length || (g.lives != null && g.lives <= 0)) return finish();
+    const song = g.deck[g.idx];
+    g.cur = song; g.answered = false; g.loadFails = g.loadFails || 0;
+    hud();
+    $("after").hidden = true;
+    $("bulb").classList.remove("reveal");
+    $("cover").removeAttribute("src");
+    $("ring").style.strokeDashoffset = 0; $("ring").style.stroke = "";
+    $("status").textContent = "Lädt …";
+    $("replay").hidden = false;
+
+    const opts = buildOptions(song);
+    const box = $("answers"); box.innerHTML = "";
+    opts.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "ans"; b.disabled = true; b._song = s;
+      b.innerHTML = `<span class="key">${i + 1}</span><span class="t"></span><span class="a"></span>`;
+      b.querySelector(".t").textContent = s.t; b.querySelector(".a").textContent = s.a;
+      b.addEventListener("click", () => answer(b));
+      box.append(b);
+    });
+
+    audio.src = song.p;
+    audio.load();
+    const onReady = () => {
+      audio.removeEventListener("error", onErr);
+      const clip = +settings.clip;
+      const dur = isFinite(audio.duration) ? audio.duration : 30;
+      g.offset = clip >= 10 ? Math.random() * Math.max(0, dur - clip - 4) : 3 + Math.random() * Math.max(0, dur - clip - 6);
+      document.querySelectorAll(".ans").forEach(b => b.disabled = false);
+      g.start = performance.now();
+      playClip();
+      startTimer();
+    };
+    const onErr = () => {
+      audio.removeEventListener("canplaythrough", onReady);
+      // preview no longer available: drop it from this game and pull the next song in
+      g.deck.splice(g.idx, 1); g.idx--;
+      if (++g.loadFails > 8) { $("status").textContent = "Die Ausschnitte laden gerade nicht. Prüfe deine Internetverbindung."; return; }
+      nextRound();
+    };
+    audio.addEventListener("canplaythrough", onReady, { once: true });
+    audio.addEventListener("error", onErr, { once: true });
+  }
+
+  function playClip() {
+    clearTimeout(clipTimer);
+    audio.currentTime = g.offset;
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => { $("status").textContent = "Tippe auf „Nochmal hören“, um den Ausschnitt abzuspielen."; });
+    $("stage").classList.add("playing");
+    $("status").textContent = "Welcher Song ist das?";
+    clipTimer = setTimeout(() => { if (!g.answered) { audio.pause(); $("stage").classList.remove("playing"); } }, +settings.clip * 1000);
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => {
+      const el = (performance.now() - g.start) / 1000;
+      const left = Math.max(0, ANSWER_TIME - el);
+      $("ring").style.strokeDashoffset = RING * (1 - left / ANSWER_TIME);
+      if (left < 4) $("ring").style.stroke = "var(--bad)";
+      if (left <= 0) answer(null);
+    }, 50);
+  }
+
+  function answer(btn) {
+    if (g.answered) return;
+    g.answered = true;
+    clearInterval(timer); clearTimeout(clipTimer);
+    const secs = (performance.now() - g.start) / 1000;
+    const correct = !!btn && btn._song === g.cur;
+    let pts = 0;
+    if (correct) {
+      g.streak++; g.right++; g.best = Math.max(g.best, g.streak);
+      const speed = Math.max(0, 1 - secs / ANSWER_TIME);
+      const combo = 1 + Math.min(g.streak - 1, 5) * 0.2;
+      pts = Math.round((100 + 100 * speed) * combo);
+      g.score += pts; g.times.push(secs);
+    } else {
+      g.streak = 0;
+      if (g.lives != null) g.lives--;
+    }
+    document.querySelectorAll(".ans").forEach(b => {
+      b.disabled = true;
+      if (b._song === g.cur) b.classList.add("right");
+      else if (b === btn) b.classList.add("wrong");
+      else b.classList.add("dim");
+    });
+    g.history.push({ song: g.cur, correct, picked: btn && btn._song });
+
+    // reveal: cover art and keep the song playing from the start of the preview
+    if (g.cur.c) $("cover").src = g.cur.c;
+    $("bulb").classList.add("reveal");
+    $("replay").hidden = true;
+    audio.currentTime = Math.min(g.offset, 10);
+    audio.play().catch(() => {});
+    $("stage").classList.add("playing");
+    $("status").textContent = `${g.cur.t} · ${g.cur.a}${g.cur.y ? " · " + g.cur.y : ""}`;
+
+    const v = $("verdict");
+    v.className = "verdict " + (correct ? "ok" : "no");
+    v.textContent = correct ? `+${pts}${g.streak > 1 ? "  Combo ×" + g.streak : ""}` : btn ? "Leider falsch" : "Zeit ist um";
+    const last = g.lives != null ? g.lives <= 0 : g.idx + 1 >= Math.min(g.total, g.deck.length);
+    $("next").textContent = last ? "Ergebnis ansehen →" : "Weiter →";
+    $("after").hidden = false;
+    hud();
+    $("next").focus({ preventScroll: true });
+  }
+
+  function finish() {
+    clearInterval(timer); clearTimeout(clipTimer);
+    audio.pause(); $("stage").classList.remove("playing");
+    const prev = store.get("best", 0);
+    const isBest = g.score > prev;
+    if (isBest) store.set("best", g.score);
+    $("best").textContent = Math.max(prev, g.score);
+    $("r-score").textContent = g.score;
+    $("r-best").hidden = !isBest || g.score === 0;
+    $("r-right").textContent = `${g.right}/${g.history.length}`;
+    $("r-streak").textContent = g.best;
+    $("r-time").textContent = g.times.length ? (g.times.reduce((a, b) => a + b, 0) / g.times.length).toFixed(1) + " s" : "–";
+    const ul = $("history"); ul.innerHTML = "";
+    g.history.forEach(h => {
+      const li = document.createElement("li");
+      const img = document.createElement("img"); img.alt = ""; img.loading = "lazy"; if (h.song.c) img.src = h.song.c.replace("300x300", "100x100");
+      const meta = document.createElement("div"); meta.className = "meta";
+      const b = document.createElement("b"); b.textContent = h.song.t;
+      const sp = document.createElement("span"); sp.textContent = h.song.a + (!h.correct && h.picked ? ` · du: ${h.picked.t}` : "");
+      meta.append(b, sp);
+      const r = document.createElement("span"); r.className = "res " + (h.correct ? "ok" : "no"); r.textContent = h.correct ? "✓" : "✗";
+      li.append(img, meta, r); ul.append(li);
+    });
+    show("results");
+  }
+
+  // ---------- wiring ----------
+  $("start").addEventListener("click", newGame);
+  $("again").addEventListener("click", newGame);
+  $("back").addEventListener("click", () => show("setup"));
+  $("next").addEventListener("click", () => { audio.pause(); $("stage").classList.remove("playing"); nextRound(); });
+  $("replay").addEventListener("click", () => { if (g && !g.answered) playClip(); });
+  $("quit").addEventListener("click", () => { if (g) finish(); });
+  document.addEventListener("keydown", e => {
+    if ($("game").hidden || e.target.matches("input")) return;
+    if (/^[1-4]$/.test(e.key) && g && !g.answered) { const b = document.querySelectorAll(".ans")[+e.key - 1]; if (b && !b.disabled) b.click(); }
+    else if ((e.key === "Enter" || e.key === " ") && g && g.answered && document.activeElement !== $("next")) { e.preventDefault(); $("next").click(); }
+    else if (e.key.toLowerCase() === "r" && g && !g.answered) playClip();
+  });
+
+  if (!SONGS.length) { $("start").disabled = true; $("start").textContent = "Keine Songdaten gefunden"; }
+})();
+</script>
+</body>
+</html>
