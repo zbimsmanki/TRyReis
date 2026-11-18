@@ -36,6 +36,7 @@ Im Ordner [`triples/`](triples/) liegt eine Handy-App, mit der du alle 24 triple
 
 - **4 Antworten:** Foto sehen, aus vier Namen den richtigen wählen
 - **Alle 24:** Foto sehen, den Namen selbst aus allen 24 Membern heraussuchen
+- **S-Nummer tippen:** Foto sehen, die S-Nummer über einen Ziffernblock eintippen
 - **Lernen:** alle Member als Karten, Namen auf Wunsch verdeckt zum Selbsttest
 - Antworten als Name, Name + S-Nummer oder nur S-Nummer
 - „Schwächen zuerst“: Member, die du oft verwechselst, kommen häufiger dran

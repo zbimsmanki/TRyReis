@@ -35,7 +35,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font: 400 16px/1.45 var(--f);
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 [hidden] { display: none !important; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; touch-action: manipulation; }
@@ -90,8 +90,14 @@ h2 { font: 700 20px/1.2 var(--f); margin: 0; }
 .photo .reveal .n { font: 800 22px var(--f); }
 .photo .reveal .k { color: #ddd; }
 .quiz.grid-mode .photo { max-height: 30vh; aspect-ratio: 1; width: auto; height: 30vh; }
+.quiz { gap: 12px; }
 .quiz.grid-mode { gap: 10px; }
 .quiz.grid-mode .feedback { min-height: 22px; font-size: 14px; }
+.quiz.grid-mode .photo .reveal { padding: 22px 10px 8px; gap: 7px; }
+.quiz.grid-mode .photo .reveal .n { font-size: 18px; }
+.photo .reveal span { white-space: nowrap; }
+.quiz.type-mode .photo { max-height: 27vh; height: 27vh; }
+.quiz.type-mode .keypad button { min-height: 46px; }
 
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .choice { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 60px; font-weight: 700; font-size: 17px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
@@ -100,8 +106,23 @@ h2 { font: 700 20px/1.2 var(--f); margin: 0; }
 .choice.bad { background: #f8717126; border-color: var(--bad); }
 .choices.locked .choice:not(.good):not(.bad) { opacity: .45; }
 
+.typer { display: flex; flex-direction: column; gap: 10px; }
+.tdisplay { align-self: center; min-width: 150px; display: flex; align-items: center; justify-content: center; gap: 2px; padding: 8px 20px; border-radius: 14px; background: var(--bg-2); border: 2px solid var(--line); font: 800 34px/1.1 var(--mono); }
+.tdisplay .tS { color: var(--accent); }
+.tdisplay .caret { width: 3px; height: 32px; background: var(--accent); margin-left: 3px; animation: blink 1s steps(1) infinite; }
+.tdisplay.good { border-color: var(--good); background: #34d39926; }
+.tdisplay.bad { border-color: var(--bad); background: #f8717126; }
+.tdisplay.good .caret, .tdisplay.bad .caret { display: none; }
+.tdisplay.shake { animation: shake .3s; }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.keypad button { min-height: 50px; border-radius: 12px; background: var(--bg-2); border: 1px solid var(--line); font: 700 22px var(--f); }
+.keypad button:active { background: var(--bg-3); }
+.keypad button.ok { background: var(--accent); border-color: var(--accent); color: #fff; font-size: 18px; }
+.typer.locked .keypad { opacity: .45; pointer-events: none; }
 .names { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.names .choice { min-height: 44px; padding: 6px 2px; font-size: 13px; border-radius: 10px; line-height: 1.15; }
+.names .choice { min-height: 41px; padding: 6px 2px; font-size: 13px; border-radius: 10px; line-height: 1.15; }
 .names .choice small { font-size: 10px; }
 .names.snum .choice { font: 700 16px var(--mono); }
 .names .choice.used { opacity: .3; }
@@ -174,6 +195,11 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
         <strong>Alle 24</strong>
         <span class="dim">Du siehst ein Foto und suchst den Namen selbst aus allen 24 Membern heraus.</span>
       </button>
+      <button class="mode" data-start="type">
+        <span class="ico">S?</span>
+        <strong>S-Nummer tippen</strong>
+        <span class="dim">Du siehst ein Foto und tippst die S-Nummer ein, ganz ohne Auswahl.</span>
+      </button>
       <button class="mode" id="goLearn">
         <span class="ico">👀</span>
         <strong>Lernen</strong>
@@ -230,6 +256,15 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
     <div class="feedback" id="qFeedback"></div>
     <div class="choices" id="qChoices"></div>
     <div class="names" id="qNames"></div>
+    <div class="typer" id="qType" hidden>
+      <div class="tdisplay" id="tDisplay"><span class="tS">S</span><span id="tVal"></span><span class="caret"></span></div>
+      <div class="keypad" id="tPad">
+        <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+        <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+        <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+        <button data-k="del" aria-label="Löschen">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button>
+      </div>
+    </div>
     <button class="btn primary" id="qNext" hidden>Weiter</button>
   </section>
 
@@ -470,9 +505,11 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
     Q.infinite = settings.rounds === "inf";
     Q.total = Q.infinite ? Infinity : settings.rounds === "24" ? pool.length : +settings.rounds;
     Q.n = 0; Q.score = 0; Q.missed = new Map(); Q.queue = [];
-    $("quiz").classList.toggle("grid-mode", mode === "grid");
+    $("quiz").classList.toggle("grid-mode", mode !== "mc");
+    $("quiz").classList.toggle("type-mode", mode === "type");
     $("qChoices").hidden = mode !== "mc";
     $("qNames").hidden = mode !== "grid";
+    $("qType").hidden = mode !== "type";
     show("quiz");
     next();
   }
@@ -496,8 +533,35 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
     $("qTotal").textContent = Q.infinite ? "" : "/" + Q.total;
     $("qScore").textContent = Q.score;
     $("qBar").style.width = Q.infinite ? "100%" : (100 * (Q.n - 1) / Q.total) + "%";
-    if (Q.mode === "mc") renderChoices(m); else renderNames();
+    if (Q.mode === "mc") renderChoices(m); else if (Q.mode === "grid") renderNames(); else resetTyper();
   }
+
+  // ---------- type the S-number ----------
+  let typed = "";
+  function resetTyper() {
+    typed = ""; $("tVal").textContent = "";
+    $("tDisplay").className = "tdisplay"; $("qType").classList.remove("locked");
+  }
+  function typeKey(k) {
+    if (Q.locked || Q.mode !== "type") return;
+    if (k === "del") typed = typed.slice(0, -1);
+    else if (k === "ok") return submitTyped();
+    else if (/^\d$/.test(k) && typed.length < 2 && !(k === "0" && !typed)) typed += k;
+    $("tVal").textContent = typed;
+  }
+  function submitTyped() {
+    const n = +typed;
+    if (!typed || n < 1 || n > 24) {
+      const d = $("tDisplay"); d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake");
+      $("qFeedback").textContent = typed ? "Es gibt nur S1 bis S24." : "Tippe zuerst eine Nummer ein."; $("qFeedback").className = "feedback";
+      return;
+    }
+    const opt = byId[n];
+    $("qType").classList.add("locked");
+    $("tDisplay").classList.add(opt.id === Q.cur.id ? "good" : "bad");
+    answer(opt, null);
+  }
+  $("tPad").addEventListener("click", e => { const b = e.target.closest("button"); if (b) typeKey(b.dataset.k); });
 
   function renderChoices(m) {
     const box = $("qChoices"); box.innerHTML = ""; box.classList.remove("locked");
@@ -528,15 +592,20 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
     const s = stats[m.id] || (stats[m.id] = { r: 0, w: 0 });
     ok ? s.r++ : s.w++;
     saveStats();
-    const box = Q.mode === "mc" ? $("qChoices") : $("qNames");
-    box.classList.add("locked");
-    box.querySelector(`[data-id="${m.id}"]`).classList.add("good");
+    const box = Q.mode === "mc" ? $("qChoices") : Q.mode === "grid" ? $("qNames") : null;
+    if (box) {
+      box.classList.add("locked");
+      box.querySelector(`[data-id="${m.id}"]`).classList.add("good");
+    }
     const fb = $("qFeedback");
     if (ok) { Q.score++; fb.textContent = pick(["Richtig!", "Genau!", "Stimmt!", "Super!"]); fb.className = "feedback good"; }
     else {
-      btn.classList.add("bad");
+      if (btn) btn.classList.add("bad");
       Q.missed.set(m.id, m);
-      fb.textContent = `Das war ${opt.name} (${opt.s}).`; fb.className = "feedback bad";
+      fb.textContent = Q.mode === "type"
+        ? `Falsch, ${opt.s} ist ${opt.name}. Richtig ist ${m.s}.`
+        : `Das war ${opt.name} (${opt.s}).`;
+      fb.className = "feedback bad";
     }
     $("qScore").textContent = Q.score;
     $("rS").textContent = m.s; $("rN").textContent = m.name; $("rK").textContent = m.ko;
@@ -569,6 +638,11 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
     if ($("quiz").hidden) return;
     if (e.key === "Enter" && !$("qNext").hidden) { e.preventDefault(); next(); return; }
     if (Q.mode === "mc" && /^[1-4]$/.test(e.key) && !Q.locked) $("qChoices").children[+e.key - 1]?.click();
+    if (Q.mode === "type" && !Q.locked) {
+      if (/^\d$/.test(e.key)) typeKey(e.key);
+      else if (e.key === "Backspace") { e.preventDefault(); typeKey("del"); }
+      else if (e.key === "Enter") { e.preventDefault(); typeKey("ok"); }
+    }
   });
 
   // ---------- member cards ----------
