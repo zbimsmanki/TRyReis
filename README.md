@@ -27,3 +27,19 @@ Hör einen kurzen Ausschnitt eines K-Pop-Songs oder schau dir die Choreo an. Du 
 1. In `tools/songs.txt` eine Zeile im Format `Artist|Song 1;Song 2;Song 3` hinzufügen.
 2. `python3 tools/fetch_previews.py` ausführen. Das Skript sucht die Vorschauen bei iTunes und schreibt `data/songs.js` neu.
 3. Songs ohne Treffer stehen danach in `tools/missing.txt`.
+
+---
+
+# tripleS Gesichter · Member lernen
+
+Im Ordner [`triples/`](triples/) liegt eine Handy-App, mit der du alle 24 tripleS Member am Aussehen erkennen lernst, inklusive S-Nummer (S1 SeoYeon bis S24 JiYeon).
+
+- **4 Antworten:** Foto sehen, aus vier Namen den richtigen wählen
+- **Alle 24:** Foto sehen, den Namen selbst aus allen 24 Membern heraussuchen
+- **Lernen:** alle Member als Karten, Namen auf Wunsch verdeckt zum Selbsttest
+- Antworten als Name, Name + S-Nummer oder nur S-Nummer
+- „Schwächen zuerst“: Member, die du oft verwechselst, kommen häufiger dran
+
+**Fotos:** Die App bringt keine Bilder mit. Unter *Fotos verwalten* lädst du eigene Fotos vom Handy hoch. Heißen die Dateien z. B. `S7.jpg` oder `nakyoung.jpg`, werden sie automatisch zugeordnet; den Rest ordnest du von Hand zu. Die Fotos bleiben nur auf deinem Gerät (IndexedDB).
+
+**Aufs Handy:** Über GitHub Pages öffnen (`…/triples/`) und im Browser „Zum Home-Bildschirm“ wählen. Danach läuft die App wie eine normale App, auch offline.
