@@ -1,0 +1,48 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "de.triples.gesichter"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "de.triples.gesichter"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Hobby signing key kept in the repo so every build can update an installed copy.
+    // It protects nothing beyond that; use your own key if you ever publish the app.
+    signingConfigs {
+        release {
+            storeFile file("triples.keystore")
+            storePassword "triplesgesichter"
+            keyAlias "triples"
+            keyPassword "triplesgesichter"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    // The web app in ../../triples is packed as-is: index.html, photos, icons.
+    sourceSets {
+        main.assets.srcDirs = ["../../triples"]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "androidx.webkit:webkit:1.12.1"
+}

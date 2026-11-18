@@ -43,3 +43,13 @@ Im Ordner [`triples/`](triples/) liegt eine Handy-App, mit der du alle 24 triple
 **Fotos:** Jeder Member hat 5–7 eingebaute Fotos (157 insgesamt): die offiziellen Konzeptfotos der Ära L&P pt.1 und pt.2, geholt aus dem tripleS-Fan-Wiki (triples.fandom.com) und automatisch auf das Gesicht zugeschnitten. Zugeordnet sind sie über den Dateinamen im Wiki, die S-Nummern sind mit den Member-Seiten im Wiki abgeglichen. Unter *Fotos verwalten* kannst du zusätzlich eigene Fotos hochladen. Die bleiben nur auf deinem Gerät.
 
 **Aufs Handy:** Über GitHub Pages öffnen (`…/triples/`) und im Browser „Zum Home-Bildschirm“ wählen. Danach läuft die App wie eine normale App, auch offline.
+
+## Android-App (APK)
+
+Fertiges APK: [`apk/tripleS-Gesichter.apk`](apk/tripleS-Gesichter.apk)
+
+1. Die Datei auf dem Handy herunterladen (auf GitHub: Datei öffnen → „Download raw file“).
+2. Antippen und installieren. Android fragt einmal, ob der Browser bzw. Dateimanager Apps installieren darf: erlauben.
+3. Die App braucht kein Internet. Alle Fotos sind im APK enthalten.
+
+Selbst bauen (JDK 17+ und Android SDK nötig): `cd android && ./gradlew assembleRelease`. Das APK liegt dann unter `android/app/build/outputs/apk/release/`. Die App lädt die Web-App aus `triples/` und packt sie unverändert ins APK.

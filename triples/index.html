@@ -690,7 +690,17 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
 
   // ---------- boot ----------
   loadPhotos().then(renderHome);
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
+  // Android app: everything is bundled in the APK, so no service worker there
+  const inApp = location.hostname === "appassets.androidplatform.net";
+  if (!inApp && "serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+  // Android back button: close sheet / leave the current screen; false = exit the app
+  window.__back = () => {
+    if (!$("sheet").hidden) { closeSheet(); return true; }
+    if (!$("quiz").hidden) { $("quit").click(); return true; }
+    if ($("home").hidden) { renderHome(); return true; }
+    return false;
+  };
 })();
 </script>
 </body>
