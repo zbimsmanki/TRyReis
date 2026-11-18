@@ -30,7 +30,7 @@ Hör einen kurzen Ausschnitt eines K-Pop-Songs oder schau dir die Choreo an. Du 
 
 ---
 
-# tripleS Gesichter · Member lernen
+# WAV · tripleS Member lernen
 
 Im Ordner [`triples/`](triples/) liegt eine Handy-App, mit der du alle 24 tripleS Member am Aussehen erkennen lernst, inklusive S-Nummer (S1 SeoYeon bis S24 JiYeon).
 
@@ -40,13 +40,13 @@ Im Ordner [`triples/`](triples/) liegt eine Handy-App, mit der du alle 24 triple
 - Antworten als Name, Name + S-Nummer oder nur S-Nummer
 - „Schwächen zuerst“: Member, die du oft verwechselst, kommen häufiger dran
 
-**Fotos:** Jeder Member hat 5–7 eingebaute Fotos (157 insgesamt): die offiziellen Konzeptfotos der Ära L&P pt.1 und pt.2, geholt aus dem tripleS-Fan-Wiki (triples.fandom.com) und automatisch auf das Gesicht zugeschnitten. Zugeordnet sind sie über den Dateinamen im Wiki, die S-Nummern sind mit den Member-Seiten im Wiki abgeglichen. Unter *Fotos verwalten* kannst du zusätzlich eigene Fotos hochladen. Die bleiben nur auf deinem Gerät.
+**Fotos:** Jeder Member hat 21–27 eingebaute Fotos (564 insgesamt): offizielle Konzeptfotos (L&P pt.1/pt.2, A25, A24, BB) und Cosmo-Profilbilder (u. a. A26), geholt aus dem tripleS-Fan-Wiki (triples.fandom.com) und automatisch auf das Gesicht zugeschnitten. Zugeordnet sind sie über den Dateinamen im Wiki, die S-Nummern sind mit den Member-Seiten im Wiki abgeglichen. Unter *Fotos verwalten* kannst du zusätzlich eigene Fotos hochladen. Die bleiben nur auf deinem Gerät.
 
 **Aufs Handy:** Über GitHub Pages öffnen (`…/triples/`) und im Browser „Zum Home-Bildschirm“ wählen. Danach läuft die App wie eine normale App, auch offline.
 
 ## Android-App (APK)
 
-Fertiges APK: [`apk/tripleS-Gesichter.apk`](apk/tripleS-Gesichter.apk)
+Fertiges APK: [`apk/WAV.apk`](apk/WAV.apk) (App-Name „WAV“, Icon: tripleS-Logo)
 
 1. Die Datei auf dem Handy herunterladen (auf GitHub: Datei öffnen → „Download raw file“).
 2. Antippen und installieren. Android fragt einmal, ob der Browser bzw. Dateimanager Apps installieren darf: erlauben.

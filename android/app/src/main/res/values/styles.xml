@@ -7,4 +7,5 @@
         <item name="android:colorAccent">#7C6CFF</item>
     </style>
     <color name="bg">#0B0B10</color>
+    <color name="ic_bg">#000000</color>
 </resources>

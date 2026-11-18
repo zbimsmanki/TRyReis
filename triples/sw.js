@@ -1,8 +1,8 @@
 // Caches the app and its built-in photos so it works offline. Own uploads live in IndexedDB.
 importScripts("photos.js");
-const CACHE = "triples-v2";
+const CACHE = "wav-v3";
 const PHOTOS = (self.PHOTO_COUNTS || []).flatMap((n, i) => Array.from({ length: n }, (_, j) => `img/s${i + 1}-${j + 1}.webp`));
-const FILES = ["./", "index.html", "photos.js", "manifest.webmanifest", "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png", ...PHOTOS];
+const FILES = ["./", "index.html", "photos.js", "manifest.webmanifest", "favicon.png", "icon-180.png", "icon-192.png", "icon-512.png", ...PHOTOS];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())
