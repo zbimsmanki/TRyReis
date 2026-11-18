@@ -273,8 +273,8 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
       <span></span>
     </div>
     <div class="panel">
-      <div><b>Mehrere Fotos auf einmal hochladen</b></div>
-      <p class="dim small" style="margin:0">Die App ordnet Fotos über den Dateinamen zu, z. B. <span class="mono">S7.jpg</span>, <span class="mono">s07_2.png</span> oder <span class="mono">nakyoung.jpg</span>. Fotos ohne passenden Namen kannst du danach von Hand zuordnen. Mehrere Fotos pro Member helfen beim Lernen.</p>
+      <div><b>Eigene Fotos hinzufügen (optional)</b></div>
+      <p class="dim small" style="margin:0">Jeder Member hat schon 5–7 offizielle Fotos. Wenn du mehr willst, lade eigene dazu. Die App ordnet Fotos über den Dateinamen zu, z. B. <span class="mono">S7.jpg</span>, <span class="mono">s07_2.png</span> oder <span class="mono">nakyoung.jpg</span>. Fotos ohne passenden Namen kannst du danach von Hand zuordnen. Mehrere Fotos pro Member helfen beim Lernen.</p>
       <label class="btn primary" style="text-align:center">
         Fotos auswählen
         <input type="file" id="bulkInput" accept="image/*" multiple hidden>
@@ -311,6 +311,7 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
 
 <div class="toast" id="toast" hidden></div>
 
+<script src="photos.js"></script>
 <script>
 (() => {
   "use strict";
@@ -357,7 +358,9 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
   }
   const photos = {};    // member id -> [{key, url}]
   async function loadPhotos() {
-    for (const m of MEMBERS) photos[m.id] = [];
+    // built-in photos ship with the app (img/s<N>-<i>.webp), own uploads come on top
+    const counts = window.PHOTO_COUNTS || [];
+    for (const m of MEMBERS) photos[m.id] = Array.from({ length: counts[m.id - 1] || 0 }, (_, i) => ({ key: null, builtin: true, url: `img/s${m.id}-${i + 1}.webp` }));
     let all = [];
     try { all = await tx("readonly", s => s.getAll()); } catch { toast("Fotos konnten nicht geladen werden."); }
     for (const p of all || []) if (photos[p.member]) photos[p.member].push({ key: p.key, url: URL.createObjectURL(p.blob) });
@@ -664,9 +667,13 @@ select { background: var(--bg-3); color: var(--ink); border: 1px solid var(--lin
     for (const p of photos[m.id]) {
       const t = el("div", "thumb");
       const img = el("img"); img.src = p.url; img.alt = m.name;
-      const del = el("button", "", "✕"); del.setAttribute("aria-label", "Foto löschen");
-      del.addEventListener("click", async () => { await removePhoto(m.id, p.key); renderSheet(); });
-      t.append(img, del); box.appendChild(t);
+      t.append(img);
+      if (!p.builtin) {
+        const del = el("button", "", "✕"); del.setAttribute("aria-label", "Foto löschen");
+        del.addEventListener("click", async () => { await removePhoto(m.id, p.key); renderSheet(); });
+        t.append(del);
+      }
+      box.appendChild(t);
     }
     if (!photos[m.id].length) box.appendChild(el("p", "dim small", "Noch keine Fotos."));
     const s = stats[m.id];
